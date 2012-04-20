@@ -1,0 +1,6 @@
+DEPENDENCIES:
+  httplib2
+
+
+Referencies:
+    https://developers.google.com/url-shortener/v1/getting_started
