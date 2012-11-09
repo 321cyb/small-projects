@@ -16,6 +16,11 @@ Resources:
    http://www.erlenstar.demon.co.uk/unix/faq_2.html#SEC16
 """
 
+'''
+Add by me, there's a more mature project called python-daemon,
+there even is a PEP 3143 about it.
+'''
+
 __author__ = "Chad J. Schroeder"
 __version__ = "$Id$"
 
