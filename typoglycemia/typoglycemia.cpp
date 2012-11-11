@@ -7,6 +7,9 @@
 
 using namespace std;
 
+//https://gist.github.com/4019515, here's Chen shuo's answer.
+
+
 //Do exactly the same as random.shuffle.
 void random_shuffle(string &word)
 {
