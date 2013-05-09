@@ -56,7 +56,7 @@ def slice(recs, index_list):
 
 
 
-def insert(recs, index_list):
+def copyto(recs, index_list):
     """
     index_list has 2 items, the first index is the one that will be copied,
     the second index is the place that will be pasted before, so this could be [1, len(recs) + 1].
@@ -88,16 +88,16 @@ def insert(recs, index_list):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="manipulate pcap files")
-    parser.add_argument("command", choices=["exchange", "remove", "slice", "insert"])
-    parser.add_argument("-i", dest="in", required=True)
-    parser.add_argument("-o", dest="out", required=True)
+    parser.add_argument("command", choices=["exchange", "remove", "slice", "copyto"])
+    parser.add_argument("-i", dest="infile", required=True)
+    parser.add_argument("-o", dest="outfile", required=True)
     parser.add_argument("index", type=int, nargs="+")
     args = parser.parse_args()
 
 
-    recs = rdpcap(args.in)
+    recs = rdpcap(args.infile)
     result = getattr(sys.modules[__name__], args.command)(recs, args.index)
-    wrpcap(args.out, result)
+    wrpcap(args.outfile, result)
 
 
 
