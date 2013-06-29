@@ -1,0 +1,7 @@
+DEPENDENCY:
+
+readelf
+objcopy
+strip
+scanelf (which is in pax-utils package)
+Python 2(obviously)
