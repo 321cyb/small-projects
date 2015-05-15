@@ -1,5 +1,9 @@
 package main
 
+// This script is used to test S3 upload performance,
+// You can tune object size, upload count and thread count
+// to see their relations.
+
 import (
 	"fmt"
 	"os"
@@ -17,6 +21,8 @@ var bytes []byte
 
 const filetype = "application/octet-stream"
 
+var bucket *s3.Bucket
+
 func main() {
 	objSize, err := strconv.Atoi(os.Args[1])
 	if err != nil {
@@ -30,19 +36,25 @@ func main() {
 		os.Exit(1)
 	}
 
-	AWSAuth := aws.Auth{
-		AccessKey: "<Key>", // change this to yours
-		SecretKey: "<Key>",
+	threadCnt, err := strconv.Atoi(os.Args[3])
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
-	region := aws.USEast
+	AWSAuth := aws.Auth{
+		AccessKey: "<Your ID>", // change this to yours
+		SecretKey: "<Your Secret>",
+	}
+
+	region := aws.USWest2
 	// change this to your AWS region
 	// click on the bucketname in AWS control panel and click Properties
 	// the region for your bucket should be under "Static Website Hosting" tab
 
 	connection := s3.New(AWSAuth, region)
 
-	bucket := connection.Bucket("<your bucketname>") // change this your bucket name
+	bucket = connection.Bucket("<Bukcet Name>") // change this your bucket name
 
 	file, err := os.Open("/dev/urandom")
 	if err != nil {
@@ -52,7 +64,7 @@ func main() {
 
 	bytes = make([]byte, objSize)
 	if readCnt, err := file.Read(bytes); readCnt != objSize {
-		fmt.Printf("read /dev/urandom error, %v", err)
+		fmt.Printf("read /dev/urandom error, %v\n", err)
 		os.Exit(1)
 	}
 
@@ -64,43 +76,41 @@ func main() {
 
 	start := time.Now()
 
-	for i := 0; i < 128; i++ {
+	for i := 0; i < threadCnt; i++ {
 		wg.Add(1)
-		go worker(ch, wg)
+		go worker(ch, &wg)
 	}
 
-	for i := 0; i < cnt; i++ {
-		ch <- i
+	for j := 0; j < cnt; j++ {
+		ch <- j
 	}
 
 	close(ch)
 	wg.Wait()
 
 	t := time.Since(start)
-	fmt.Printf("total spent time: %v", t)
+	fmt.Printf("total spent time: %v\n", t)
 }
 
-func worker(ch chan int, wg sync.WaitGroup) {
+func worker(ch chan int, wg *sync.WaitGroup) {
 	for {
-		select {
-		case n, ok := (<-ch):
-			if ok {
-				for i := 0; i < 3; i++ {
-					if doUpload() == nil {
-						break
-					}
+		_, ok := <-ch
+		if ok {
+			for i := 0; i < 3; i++ {
+				if doUpload() == nil {
+					break
 				}
-			} else {
-				wg.Done()
-				return
 			}
+		} else {
+			wg.Done()
+			break
 		}
 	}
 }
 
-func doUpload() {
+func doUpload() error {
 	path := feeds.NewUUID().String()
-	err = bucket.Put(path, bytes, filetype, s3.ACL("public-read"))
+	err := bucket.Put(path, bytes, filetype, s3.BucketOwnerRead)
 
 	// NOTE : If you get this error message
 	// Get : 301 response missing Location header
@@ -114,5 +124,8 @@ func doUpload() {
 	// See http://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-authenticating-requests.html
 
 	// UPDATE 15th Jan 2015: See http://camlistore.org/pkg/misc/amazon/s3/#Client.BucketLocation
+	if err != nil {
+		fmt.Println(err)
+	}
 	return err
 }
